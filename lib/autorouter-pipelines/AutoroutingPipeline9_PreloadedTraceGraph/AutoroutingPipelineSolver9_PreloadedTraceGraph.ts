@@ -21,6 +21,7 @@ import { MultiGraphTopologyPlannerSolver } from "lib/solvers/TopologyPlanningSol
 import { TopologyMergingSolver } from "lib/solvers/TopologyMergingSolver/TopologyMergingSolver"
 import { UniformPortDistributionSolver } from "lib/solvers/UniformPortDistributionSolver/UniformPortDistributionSolver"
 import { getColorMap } from "lib/solvers/colors"
+import { assertBusAllowedLayers } from "lib/utils/assertBusAllowedLayers"
 import {
   CapacityMeshEdge,
   CapacityMeshNode,
@@ -963,6 +964,12 @@ export class AutoroutingPipelineSolver9_PreloadedTraceGraph extends BaseSolver {
       "lengthMatchingPostProcessingSolver",
       LengthMatchingPostProcessingSolver,
       (cms) => {
+        if (cms.originalSrj.buses?.some((bus) => bus.allowedLayers !== undefined)) {
+          assertBusAllowedLayers(cms.originalSrj, [
+            ...cms.getUpdatedPreloadedTraces(),
+            ...cms.getNewTracesBeforePowerExpansion(),
+          ])
+        }
         const netToPointPairsSolver = cms.netToPointPairsSolver
         if (!netToPointPairsSolver)
           throw new Error(
@@ -1198,6 +1205,12 @@ export class AutoroutingPipelineSolver9_PreloadedTraceGraph extends BaseSolver {
   _step() {
     const pipelineStepDef = this.pipelineDef[this.currentPipelineStepIndex]
     if (!pipelineStepDef) {
+      if (this.originalSrj.buses?.some((bus) => bus.allowedLayers !== undefined)) {
+        assertBusAllowedLayers(this.originalSrj, [
+          ...this.getPowerTraceExpansionFixedTraces(),
+          ...this.powerTraceExpansionSolver!.getOutput(),
+        ])
+      }
       this.solved = true
       return
     }
